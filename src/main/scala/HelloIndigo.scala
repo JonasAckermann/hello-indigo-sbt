@@ -4,19 +4,21 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 @JSExportTopLevel("IndigoGame")
 object HelloIndigo extends IndigoSandbox[Unit, Model] {
 
-  val magnification = 3
+  val magnification = 1
 
   val config: indigo.GameConfig =
-    GameConfig.default.withMagnification(magnification)
+    GameConfig.default.withMagnification(magnification).withViewport(1680, 972)
 
   val animations: Set[indigo.Animation] =
     Set()
 
-  val assetName = AssetName("dots")
+  val plutoAssetName = AssetName("pluto")
+  val lineAssetName = AssetName("centerStrip")
 
   val assets: Set[indigo.AssetType] =
     Set(
-      AssetType.Image(AssetName("dots"), AssetPath("assets/dots.png"))
+      AssetType.Image(AssetName("pluto"), AssetPath("assets/pluto.png")),
+      AssetType.Image(AssetName("centerStrip"), AssetPath("assets/line.png"))
     )
 
   val fonts: Set[indigo.FontInfo] =
@@ -37,25 +39,19 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
       context: indigo.FrameContext,
       model: Model
   ): indigo.GlobalEvent => indigo.Outcome[Model] = {
-    case MouseEvent.Click(x, y) =>
-      val adjustedPosition = Point(x, y) - model.center
+    case KeyboardEvent.KeyDown(Keys.LEFT_ARROW) =>
+      Outcome(model.update(-1))
 
-      Outcome(
-        model.addDot(
-          Dot(
-            Point.distanceBetween(model.center, Point(x, y)).toInt,
-            Radians(
-              Math.atan2(
-                adjustedPosition.x.toDouble,
-                adjustedPosition.y.toDouble
-              )
-            )
-          )
-        )
-      )
+    case KeyboardEvent.KeyDown(Keys.RIGHT_ARROW) =>
+      Outcome(model.update(1))
 
     case FrameTick =>
-      Outcome(model.update(context.delta))
+      val change = model.pluto.velocity match {
+        case a if a > 8  => -1
+        case c if c < -8  => 1
+        case _ => 0
+      }
+      Outcome(model.update(0))
 
     case _ =>
       Outcome(model)
@@ -66,40 +62,41 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
       model: Model
   ): indigo.SceneUpdateFragment =
     SceneUpdateFragment(
-      Graphic(Rectangle(0, 0, 32, 32), 1, Material.Textured(assetName))
     ).addGameLayerNodes(
-      drawDots(model.center, model.dots)
+      drawScene(model.pluto, model.lines)
     )
 
-  def drawDots(
-      center: Point,
-      dots: List[Dot]
-  ): List[Graphic] =
-    dots.map { dot =>
-      val position = Point(
-        (Math.sin(dot.angle.value) * dot.orbitDistance + center.x).toInt,
-        (Math.cos(dot.angle.value) * dot.orbitDistance + center.y).toInt
-      )
+  def drawScene(
+      pluto: Pluto,
+      lines: List[CenterStrip]
+  ): List[Graphic] = {
 
-      Graphic(Rectangle(0, 0, 32, 32), 1, Material.Textured(assetName))
-        .withCrop(Rectangle(16, 16, 16, 16))
-        .withRef(8, 8)
-        .moveTo(position)
-    }
+    lines.map(line =>Graphic(Rectangle(0, 0, 10, 50), 1, Material.Textured(lineAssetName)).withTint(255,255,255)
+      .moveTo(line.location)) ++
+    List(Graphic(Rectangle(0, 0, 120, 75), 1, Material.Textured(plutoAssetName))
+      .withRef(60, 38)
+      .moveTo(pluto.location))
+  }
 
 }
 
-case class Model(center: Point, dots: List[Dot]) {
-  def addDot(dot: Dot): Model =
-    this.copy(dots = dot :: dots)
-
-  def update(timeDelta: Seconds): Model =
-    this.copy(dots = dots.map(_.update(timeDelta)))
+case class Model(pluto: Pluto, lines: List[CenterStrip]) {
+  def update(acc: Int): Model =
+    this.copy(pluto = pluto.update(acc), lines.map(_.update))
 }
 object Model {
-  def initial(center: Point): Model = Model(center, Nil)
+  def initial(center: Point): Model = Model(Pluto(center, 0), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y))).toList)}
+case class Pluto(location: Point, velocity: Int) {
+  def update(acc: Int): Pluto =
+    this.copy(location = Point(location.x + velocity, location.y), velocity = velocity + acc)
 }
-case class Dot(orbitDistance: Int, angle: Radians) {
-  def update(timeDelta: Seconds): Dot =
-    this.copy(angle = angle + Radians.fromSeconds(timeDelta))
+case class CenterStrip(location: Point){
+  def update: CenterStrip = {
+    val newLocation = location.y match {
+      case a if a <= -88 => 972
+      case _ => location.y - 3
+    }
+
+    this.copy(Point(location.x, newLocation))
+  }
 }
