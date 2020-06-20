@@ -16,11 +16,13 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
 
   val plutoAssetName = AssetName("pluto")
   val lineAssetName = AssetName("centerStrip")
+  val passengerAssetName = AssetName("passenger")
 
   val assets: Set[indigo.AssetType] =
     Set(
       AssetType.Image(AssetName("pluto"), AssetPath("assets/pluto.png")),
-      AssetType.Image(AssetName("centerStrip"), AssetPath("assets/line.png"))
+      AssetType.Image(AssetName("centerStrip"), AssetPath("assets/line.png")),
+      AssetType.Image(AssetName("passenger"), AssetPath("assets/robert.png"))
     )
 
   val fonts: Set[indigo.FontInfo] =
@@ -91,7 +93,7 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
 
     lines.map(line =>Graphic(Rectangle(0, 0, 10, 50), 1, Material.Textured(lineAssetName)).withTint(255,255,255)
       .moveTo(line.location)) ++
-    List(Graphic(Rectangle(0, 0, 30, 30), 1, Material.Textured(lineAssetName)).withTint(255,0,0)
+    List(Graphic(Rectangle(0, 0, 20, 60), 1, Material.Textured(passengerAssetName))
       .moveTo(passenger.drawLocation)) ++
     List(Graphic(Rectangle(0, 0, 120, 75), 1, Material.Textured(plutoAssetName))
       .withRef(60, 38)
@@ -105,7 +107,7 @@ case class Model(pluto: Pluto, lines: List[CenterStrip], passenger: Passenger, f
     this.copy(pluto = pluto.update(acc), lines.map(_.update(ftct)), passenger.update(pluto.location, pickupAttempt), ftct = (ftct % 10) + 1 )
 }
 object Model {
-  def initial(center: Point): Model = Model(Pluto(center, 0), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y), - gamespeed)).toList, Passenger.initial(center.x),  0)}
+  def initial(center: Point): Model = Model(Pluto(center, 0), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y), - gamespeed)).toList, Passenger.initial(center.x - 100),  0)}
 case class Pluto(location: Point, velocity: Int) {
   def update(acc: Int): Pluto = {
     this.copy(location = Point(location.x + velocity, location.y), velocity = velocity + acc)
