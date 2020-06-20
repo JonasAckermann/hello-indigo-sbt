@@ -1,15 +1,8 @@
-# "Hello, Indigo!"
+# "Hello Pluto"
 
-![Screen grab of "Hello, Indigo!"](screenshot.png)
+An attempt to play around with the Indigo game engine, based on the hello-indigo example. There is a [write up](https://indigoengine.io/docs/quickstart/hello-indigo) if you'd like to follow along with how the this little demo was made.
 
-This is a small "hello, world"-like project to help people get started with indigo. There is a [write up](https://indigoengine.io/docs/quickstart/hello-indigo) if you'd like to follow along with how the this little demo was made.
-
-> Note: The Mill version was built first, and it's [commit history](https://github.com/PurpleKingdomGames/hello-indigo) shows how the demo was built up.
-
-This demo has been built using SBT, but you can use Mill, please see the [set up guide](https://indigoengine.io/docs/quickstart/setup-and-configuration).
-
-Assuming you have [SBT](https://www.scala-sbt.org/) and http-server set up as the guide suggests, to run the demo, do the following from your command line:
-
+## Build and Run
 ```bash
 sbt buildGame
 ```
@@ -31,4 +24,14 @@ Then:
 2. `http-server -c-1`
 3. Navigate to [http://127.0.0.1:8080/](http://127.0.0.1:8080/) in your browser of choice.
 
-If you're running from a fresh checkout, make sure you click on the screen to see the dots! :-)
+## Controls
+`Left/Right Arrow` to move.
+`Shift` to pick up a passenger.
+
+## Next Steps
+1. Score and Interface.
+2. Delivery.
+3. Game Over.
+4. Graphical updates.
+5. Fix physics.
+6. Cute design. 

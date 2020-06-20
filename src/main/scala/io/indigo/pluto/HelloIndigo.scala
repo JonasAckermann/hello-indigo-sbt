@@ -6,10 +6,8 @@ import scala.scalajs.js.annotation.JSExportTopLevel
 @JSExportTopLevel("IndigoGame")
 object HelloIndigo extends IndigoSandbox[Unit, Model] {
 
-  val magnification = 1
-
   val config: indigo.GameConfig =
-    GameConfig.default.withMagnification(magnification).withViewport(1680, 972)
+    GameConfig.default.withMagnification(magnification).withViewport(width, height).withClearColor(ClearColor.fromRGB(111, 111, 111))
 
   val animations: Set[indigo.Animation] =
     Set()
@@ -116,7 +114,7 @@ case class Pluto(location: Point, velocity: Int) {
 case class CenterStrip(location: Point, velocity: Double){
   def update(ftct: Int): CenterStrip = {
     val (newLocation: Double, velocityChange: Double) = location.y match {
-      case a if a <= -88 => (972, 0D)
+      case a if a <= -88 => (height, 0D)
       case _ if (ftct % 10 == 0) => (location.y + velocity, 0D) //TODO fix
       case _ => (location.y + velocity, 0D)
     }
@@ -128,7 +126,7 @@ case class Passenger(state: Pickup, location: Point, drawLocation: Point){
   def update(plutoPos: Point, button: Boolean): Passenger ={
     val (newState, newLocation, newDrawLocation) = plutoPos match {
       // higher than view, reset
-      case _ if location.y < - 25 => Passenger.reset(location.x)
+      case _ if location.y < - 25 => Passenger.placeRandom
       // higher than pluto, maybe missed
       case a if a.y > (location.y + 100) => state match {
         case Pickup.Success => (Pickup.Success, Point(location.x, location.y - gamespeed), Point(-100, -100))
@@ -157,7 +155,11 @@ object Passenger {
     val (state, loc, dloc) = reset(xLoc)
     Passenger(state, loc, dloc)
   }
-  def reset(xLoc: Int) = (Pickup.NotYet, Point(xLoc, 972), Point(xLoc, 972))
+  def reset(xLoc: Int) = (Pickup.NotYet, Point(xLoc, height), Point(xLoc, height))
+  def placeRandom = {
+    val xLoc = scala.util.Random.between(10, width-10)
+    (Pickup.NotYet, Point(xLoc, height), Point(xLoc, height))
+  }
 }
 
 sealed trait Pickup
