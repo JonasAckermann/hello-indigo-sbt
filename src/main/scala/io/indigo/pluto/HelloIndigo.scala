@@ -1,6 +1,6 @@
 package io.indigo.pluto
 
-import indigo._
+import indigo.{AssetType, _}
 import scala.scalajs.js.annotation.JSExportTopLevel
 
 @JSExportTopLevel("IndigoGame")
@@ -15,12 +15,14 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
   val plutoAssetName = AssetName("pluto")
   val lineAssetName = AssetName("centerStrip")
   val passengerAssetName = AssetName("passenger")
+  val deliveryAssetName = AssetName("delivery")
 
   val assets: Set[indigo.AssetType] =
     Set(
       AssetType.Image(AssetName("pluto"), AssetPath("assets/pluto.png")),
       AssetType.Image(AssetName("centerStrip"), AssetPath("assets/line.png")),
-      AssetType.Image(AssetName("passenger"), AssetPath("assets/robert.png"))
+      AssetType.Image(AssetName("passenger"), AssetPath("assets/robert.png")),
+      AssetType.Image(AssetName("delivery"), AssetPath("assets/delivery.png"))
     )
 
   val fonts: Set[indigo.FontInfo] =
@@ -80,19 +82,22 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
   ): indigo.SceneUpdateFragment =
     SceneUpdateFragment(
     ).addGameLayerNodes(
-      drawScene(model.pluto, model.lines, model.passenger)
+      drawScene(model.pluto, model.lines, model.passenger , model.deliveryStop)
     )
 
   def drawScene(
       pluto: Pluto,
       lines: List[CenterStrip],
-      passenger: Passenger
+      passenger: Passenger,
+      delivery: DeliveryStop
   ): List[Graphic] = {
 
     lines.map(line =>Graphic(Rectangle(0, 0, 10, 50), 1, Material.Textured(lineAssetName)).withTint(255,255,255)
       .moveTo(line.location)) ++
     List(Graphic(Rectangle(0, 0, 20, 60), 1, Material.Textured(passengerAssetName))
       .moveTo(passenger.drawLocation)) ++
+    List(Graphic(Rectangle(0, 0, 150, 150), 1, Material.Textured(deliveryAssetName))
+        .moveTo(delivery.location)) ++
     List(Graphic(Rectangle(0, 0, 120, 75), 1, Material.Textured(plutoAssetName))
       .withRef(60, 38)
       .moveTo(pluto.location))
@@ -100,12 +105,17 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
 
 }
 
-case class Model(pluto: Pluto, lines: List[CenterStrip], passenger: Passenger, ftct: Int) {
-  def update(acc: Int, pickupAttempt: Boolean): Model =
-    this.copy(pluto = pluto.update(acc), lines.map(_.update(ftct)), passenger.update(pluto.location, pickupAttempt), ftct = (ftct % 10) + 1 )
+case class Model(pluto: Pluto, lines: List[CenterStrip], passenger: Passenger, deliveryStop: DeliveryStop, ftct: Int) {
+  def update(acc: Int, pickupAttempt: Boolean): Model = {
+    val newPluto = pluto.update(acc)
+    val newLines = lines.map(_.update(ftct))
+    val newPassenger = passenger.update(pluto.location, pickupAttempt)
+    val newDelivery = deliveryStop.update
+    this.copy(newPluto, newLines, newPassenger, newDelivery, ftct = (ftct % 10) + 1 )
+  }
 }
 object Model {
-  def initial(center: Point): Model = Model(Pluto(center, 0), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y), - gamespeed)).toList, Passenger.initial(center.x - 100),  0)}
+  def initial(center: Point): Model = Model(Pluto(center, 0), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y), - gamespeed)).toList, Passenger.initial(center.x - 100), DeliveryStop(Point(center.x, center.y)),  0)}
 case class Pluto(location: Point, velocity: Int) {
   def update(acc: Int): Pluto = {
     this.copy(location = Point(location.x + velocity, location.y), velocity = velocity + acc)
@@ -162,9 +172,18 @@ object Passenger {
   }
 }
 
+case class DeliveryStop(location: Point){
+  val update = this.copy(Point(location.x, location.y - gamespeed))
+}
+object DeliveryStop {
+  //def initial(xLoc: Int) = DeliveryStop(Point(xLoc, height))
+  //def randomX = scala.util.Random.between(10, width-10)
+}
+
 sealed trait Pickup
 object Pickup {
   case object Missed extends Pickup
   case object Success extends Pickup
   case object NotYet extends Pickup
+  case object Delivered extends Pickup
 }
