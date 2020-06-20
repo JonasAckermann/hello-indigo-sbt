@@ -46,12 +46,14 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
       Outcome(model.update(1))
 
     case FrameTick =>
-      val change = model.pluto.velocity match {
-        case a if a > 8  => -1
-        case c if c < -8  => 1
+      val change = if(model.ftct % 10 == 0) {
+        model.pluto.velocity match {
+        case a if a > 0  => -1
+        case c if c < 0  => 1
         case _ => 0
-      }
-      Outcome(model.update(0))
+        }
+      } else 0
+      Outcome(model.update(change))
 
     case _ =>
       Outcome(model)
@@ -80,15 +82,17 @@ object HelloIndigo extends IndigoSandbox[Unit, Model] {
 
 }
 
-case class Model(pluto: Pluto, lines: List[CenterStrip]) {
+case class Model(pluto: Pluto, lines: List[CenterStrip], ftct: Int) {
   def update(acc: Int): Model =
-    this.copy(pluto = pluto.update(acc), lines.map(_.update))
+    this.copy(pluto = pluto.update(acc), lines.map(_.update), ftct = (ftct % 10) + 1 )
 }
 object Model {
-  def initial(center: Point): Model = Model(Pluto(center, 0), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y))).toList)}
-case class Pluto(location: Point, velocity: Int) {
-  def update(acc: Int): Pluto =
-    this.copy(location = Point(location.x + velocity, location.y), velocity = velocity + acc)
+  def initial(center: Point): Model = Model(Pluto(center, 0, ""), (0 to 970 by 88).map(y => CenterStrip(Point(center.x, y))).toList, 0)}
+case class Pluto(location: Point, velocity: Int, infoText: String) {
+  def update(acc: Int): Pluto = {
+    println(infoText)
+    this.copy(location = Point(location.x + velocity, location.y), velocity = velocity + acc, infoText = s"velocity: $velocity, acc: $acc")
+  }
 }
 case class CenterStrip(location: Point){
   def update: CenterStrip = {
